@@ -1,2 +1,2 @@
-from .orbit import CelestialObject
+from .orbit import CelestialObject, StarSystem
 

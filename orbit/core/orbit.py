@@ -1,17 +1,15 @@
 import numpy as np
 import scipy.special as sp
 from datetime import datetime, date, time
-from config import char_map
+from config import CHAR_MAP, PLANETS
 from .renderer import generate_plot
 
 
 class CelestialObject:
 
-    __plot = {}
-
     def __init__(self, **kwargs):
 
-        self.__name__ = kwargs.get("name")
+        self.name = kwargs.get("name", "noname")
 
         self.i = kwargs.get("i") * np.pi / 180
         self.e = kwargs.get("e")
@@ -24,7 +22,7 @@ class CelestialObject:
         peri_arg = kwargs.get("peri_arg")
         peri_long = kwargs.get("peri_long")
 
-        self.peri_long = peri_long * np.pi / 180 if peri_long else peri_arg * np.pi / 180 + self.node_long + np.pi / 2
+        self.peri_long = peri_long * np.pi / 180 if peri_long else peri_arg * np.pi / 180 + self.node_long
 
         L = kwargs.get("L")
         M = kwargs.get("M")
@@ -42,7 +40,8 @@ class CelestialObject:
     def _get_foci_dist(self):
         return self.perihelion * self.e
 
-    def _get_rotation_matrix(self, theta, ux, uy, uz):
+    @staticmethod
+    def _get_rotation_matrix(theta, ux, uy, uz):
 
         rotation_array = np.array([
             [
@@ -102,9 +101,9 @@ class CelestialObject:
 
         current_date = datetime.utcnow().timestamp()
 
-        year = int(str(char_map[epoch[0]]) + epoch[1] + epoch[2])
-        month = char_map[epoch[3]] if not epoch[3].isdigit() else int(epoch[3])
-        day = char_map[epoch[4]] if not epoch[4].isdigit() else int(epoch[4])
+        year = int(str(CHAR_MAP[epoch[0]]) + epoch[1] + epoch[2])
+        month = CHAR_MAP[epoch[3]] if not epoch[3].isdigit() else int(epoch[3])
+        day = CHAR_MAP[epoch[4]] if not epoch[4].isdigit() else int(epoch[4])
 
         epoch_date = datetime.combine(date(year=year, month=month, day=day), time(hour=12))
 
@@ -143,16 +142,28 @@ class CelestialObject:
 
         return true_anomaly
 
-    def plot_params(self, **kwargs):
 
-        CelestialObject.__plot[self] = {
-            "orbit": kwargs.get("orbit", False),
-            "position": kwargs.get("position", False),
+class StarSystem:
+
+    def __init__(self):
+
+        self.to_plot = {}
+
+    def plot(self):
+        generate_plot(self.to_plot)
+
+    def include(self, obj: CelestialObject, **kwargs):
+
+        self.to_plot[obj] = {
+            "orbit": kwargs.get("orbit", True),
+            "position": kwargs.get("position", True),
             "size": int(kwargs.get("size", 3)),
             "width": int(kwargs.get("width", 2)),
             "color": kwargs.get("color", "grey")
         }
 
-    @classmethod
-    def plot(cls):
-        generate_plot(cls.__plot)
+    def include_planet(self, planet: str, **kwargs):
+
+        object_params = PLANETS[planet]
+        self.include(CelestialObject(**object_params), **kwargs)
+
